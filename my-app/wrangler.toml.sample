@@ -1,0 +1,5 @@
+account_id = "6acf460e6e9a9ad12adc72d4a955b3b7"
+name = "my-app"
+type = "webpack"
+workers_dev = true
+site = { bucket = "./public" }
