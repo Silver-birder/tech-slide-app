@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "functions-framework --target=helloWorld"
   },
   "keywords": [],
   "author": "silverbirder <silverbirder@gmail.com> (https://silver-birder.github.io/)",
@@ -13,6 +13,8 @@
     "@google-cloud/functions-framework": "^1.8.0"
   },
   "dependencies": {
-    "@google-cloud/firestore": "^4.12.3"
+    "@google-cloud/firestore": "^4.12.3",
+    "firebase-admin": "^9.9.0",
+    "twitter-v2": "^1.1.0"
   }
 }
