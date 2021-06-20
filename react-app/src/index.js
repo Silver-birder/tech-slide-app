@@ -3,12 +3,22 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import firebase from '@firebase/app';
+import '@firebase/firestore';
+import { FirestoreProvider } from 'react-firestore';
+
+const config = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+};
+
+firebase.initializeApp(config);
 
 ReactDOM.render(
-  <React.StrictMode>
+  <FirestoreProvider firebase={firebase}>
     <App />
-  </React.StrictMode>,
-  document.getElementById('root')
+  </FirestoreProvider>,
+  document.getElementById('root'),
 );
 
 // If you want to start measuring performance in your app, pass a function
