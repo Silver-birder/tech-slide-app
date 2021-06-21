@@ -87,49 +87,67 @@ class TwitterUser {
     }
 }
 
-(async () => {
-    const client = new Twitter({
-        bearer_token: process.env.TWITTER_V2_BEARER_TOKEN,
-    });
-
-    const { data, includes } = await client.get('tweets/search/recent',
-        {
-            query: 'has:links -is:reply -is:retweet -is:quote (url:"https://speakerdeck.com" OR url:"https://www.slideshare.net" OR url:"https://docs.google.com/presentation")',
-            tweet: {
-                fields: 'created_at,public_metrics,entities'
-            },
-            expansions: 'author_id',
-            max_results: 10
+async function listenForever(streamFactory, dataConsumer) {
+    try {
+        for await (const { data, includes } of streamFactory()) {
+            dataConsumer(data, includes);
         }
-    );
-    let usersList = [];
-    if (includes.hasOwnProperty('users')) {
-        usersList = includes.users.map((u) => {
-            return new TwitterUser(u);
+        console.log('Stream disconnected healthily. Reconnecting.');
+        listenForever(streamFactory, dataConsumer);
+    } catch (error) {
+        console.warn('Stream disconnected with error. Retrying.', error);
+        listenForever(streamFactory, dataConsumer);
+    }
+}
+
+const client = new Twitter({
+    bearer_token: process.env.TWITTER_V2_BEARER_TOKEN,
+});
+
+listenForever(
+    () => client.stream('tweets/search/stream', {
+        tweet: {
+            fields: 'created_at,public_metrics,entities'
+        },
+        expansions: 'author_id',
+    }),
+    async (data, includes) => {
+        console.log('found!');
+        console.log(data);
+        console.log(includes);
+        let usersList = [];
+        if (includes.hasOwnProperty('users')) {
+            usersList = includes.users.map((u) => {
+                return new TwitterUser(u);
+            })
+        }
+        // const tweetList = data.map((data) => {
+        //     return new Tweet(data);
+        // });
+        const tweetList = [new Tweet(data)];
+        const slideList = tweetList.filter((tweet) => {
+            return tweet.slidesClass.length > 0
+        }).map((tweet) => {
+            return tweet.slidesClass;
+        }).flat();
+        let bulkWriter = firestore.bulkWriter();
+        tweetList.map(async (tweet) => {
+            let documentRef = firestore.collection('tweets').doc(tweet.id);
+            const res = await bulkWriter.create(documentRef, tweet.toJson());
+            console.log(res);
+        });
+        slideList.map(async (slide) => {
+            let documentRef = firestore.collection('slides').doc(slide.id);
+            const res = await bulkWriter.create(documentRef, slide.toJson());
+            console.log(res);
+        });
+        usersList.map(async (user) => {
+            let documentRef = firestore.collection('users').doc(user.id);
+            const res = await bulkWriter.create(documentRef, user.toJson());
+            console.log(res);
+        });
+        await bulkWriter.close().then(() => {
+            console.log('Executed all writes');
         })
     }
-    const tweetList = data.map((data) => {
-        return new Tweet(data);
-    });
-    const slideList = tweetList.filter((tweet) => {
-        return tweet.slidesClass.length > 0
-    }).map((tweet) => {
-        return tweet.slidesClass;
-    }).flat();
-    let bulkWriter = firestore.bulkWriter();
-    tweetList.map((tweet) => {
-        let documentRef = firestore.collection('tweets').doc(tweet.id);
-        bulkWriter.create(documentRef, tweet.toJson());
-    });
-    slideList.map((slide) => {
-        let documentRef = firestore.collection('slides').doc(slide.id);
-        bulkWriter.create(documentRef, slide.toJson());
-    });
-    usersList.map((user) => {
-        let documentRef = firestore.collection('users').doc(user.id);
-        bulkWriter.create(documentRef, user.toJson());
-    });
-    await bulkWriter.close().then(() => {
-        console.log('Executed all writes');
-    })
-})();
+);
