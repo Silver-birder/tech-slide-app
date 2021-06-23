@@ -114,9 +114,6 @@ const client = new Twitter({
         max_results: 10,
         expansions: 'author_id',
     });
-    console.log(meta);
-    console.log(data);
-    console.log(includes);
     let usersList = [];
     if (includes.hasOwnProperty('users')) {
         usersList = includes.users.map((u) => {
@@ -135,23 +132,29 @@ const client = new Twitter({
         await slide.fetch();
     }));
     let bulkWriter = firestore.bulkWriter();
-    tweetList.map(async (tweet) => {
+    Promise.all([tweetList.map(async (tweet) => {
         let documentRef = firestore.collection('tweets').doc(tweet.id);
-        const res = await bulkWriter.create(documentRef, tweet.toJson());
-        console.log(res);
-    });
-    slideList.map(async (slide) => {
-        console.log(slide.toJson());
+        const documentSnapshot = await documentRef.get();
+        if (documentSnapshot.exists) {
+            return await bulkWriter.update(documentRef, tweet.toJson());
+        } else {
+            return await bulkWriter.create(documentRef, tweet.toJson());
+        }
+    }), slideList.map(async (slide) => {
         let documentRef = firestore.collection('slides').doc(slide.id);
-        const res = await bulkWriter.create(documentRef, slide.toJson());
-        console.log(res);
-    });
-    usersList.map(async (user) => {
+        const documentSnapshot = await documentRef.get();
+        if (documentSnapshot.exists) {
+            return await bulkWriter.update(documentRef, slide.toJson());
+        } else {
+            return await bulkWriter.create(documentRef, slide.toJson());
+        }
+    }), usersList.map(async (user) => {
         let documentRef = firestore.collection('users').doc(user.id);
-        const res = await bulkWriter.create(documentRef, user.toJson());
-        console.log(res);
-    });
-    await bulkWriter.close().then(() => {
-        console.log('Executed all writes');
-    })
+        const documentSnapshot = await documentRef.get();
+        if (documentSnapshot.exists) {
+            return await bulkWriter.update(documentRef, user.toJson());
+        } else {
+            return await bulkWriter.create(documentRef, user.toJson());
+        }
+    })]);
 })();
