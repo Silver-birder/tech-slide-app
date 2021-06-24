@@ -106,55 +106,117 @@ const client = new Twitter({
 });
 
 (async () => {
-    const { data, includes, meta } = await client.get('tweets/search/recent', {
-        query: 'has:links -is:reply -is:retweet -is:quote (url:"https://speakerdeck.com" OR url:"https://www.slideshare.net" OR url:"https://docs.google.com/presentation")',
-        tweet: {
-            fields: 'created_at,public_metrics,entities'
-        },
-        max_results: 10,
-        expansions: 'author_id',
-    });
-    let usersList = [];
-    if (includes.hasOwnProperty('users')) {
-        usersList = includes.users.map((u) => {
-            return new TwitterUser(u);
-        })
+    let next_token = "";
+    let since_id = "";
+    let counter = 0;
+    const startTime = new Date();
+    const h = startTime.getHours();
+    startTime.setHours(h - 1);
+    while (true) {
+        const query = 'has:links -is:reply -is:retweet -is:quote (url:"https://speakerdeck.com" OR url:"https://www.slideshare.net" OR url:"https://docs.google.com/presentation")';
+        const option = {
+            query: query,
+            tweet: {
+                fields: 'created_at,public_metrics,entities'
+            },
+            expansions: 'author_id',
+            start_time: startTime,
+            max_results: 100,
+        }
+        if (next_token) {
+            option['next_token'] = next_token;
+        }
+        // if (since_id) {
+        //     option['since_id'] = since_id;
+        // }
+        console.log('option');
+        console.log(option);
+        const { data, includes, meta } = await client.get('tweets/search/recent', option);
+        if (meta.result_count == 0) {
+            console.log('result_count:0');
+            break;
+        }
+        let usersList = [];
+        if (includes && includes.hasOwnProperty('users')) {
+            usersList = includes.users.map((u) => {
+                return new TwitterUser(u);
+            }).reduce((array, item) => {
+                if (!array.some(ar => ar.id == item.id)) {
+                    array.push(item);
+                }
+                return array;
+            }, []);
+        }
+        const tweetList = data.map((data) => {
+            return new Tweet(data);
+        }).reduce((array, item) => {
+            if (!array.some(ar => ar.id == item.id)) {
+                array.push(item);
+            }
+            return array;
+        }, []);
+        const slideList = tweetList.filter((tweet) => {
+            return tweet.slidesClass.length > 0
+        }).map((tweet) => {
+            return tweet.slidesClass;
+        }).flat().reduce((array, item) => {
+            if (!array.some(ar => ar.id == item.id)) {
+                array.push(item);
+            }
+            return array;
+        }, []);
+        console.log('slide fetch start');
+        await Promise.all(slideList.map(async (slide) => {
+            await slide.fetch();
+        }));
+        console.log('slide fetch end');
+        console.log('promise all');
+        await Promise.all(tweetList.map(async (tweet) => {
+            console.log('tweet');
+            let documentRef = firestore.collection('tweets').doc(tweet.id);
+            const documentSnapshot = await documentRef.get();
+            if (documentSnapshot.exists) {
+                console.log('tweet exists');
+                return await documentRef.update(tweet.toJson());
+            } else {
+                console.log('tweet not exists');
+                return await documentRef.create(tweet.toJson());
+            }
+        }), slideList.map(async (slide) => {
+            console.log('slide');
+            let documentRef = firestore.collection('slides').doc(slide.id);
+            const documentSnapshot = await documentRef.get();
+            if (documentSnapshot.exists) {
+                console.log('slide exists');
+                return await documentRef.update(slide.toJson());
+            } else {
+                console.log('slide not exists');
+                return await documentRef.create(slide.toJson());
+            }
+        }), usersList.map(async (user) => {
+            console.log('user');
+            let documentRef = firestore.collection('users').doc(user.id);
+            const documentSnapshot = await documentRef.get();
+            if (documentSnapshot.exists) {
+                console.log('user exists');
+                return await documentRef.update(user.toJson());
+            } else {
+                console.log('user not exists');
+                return await documentRef.create(user.toJson());
+            }
+        }));
+
+        console.log('close');
+        if (meta.hasOwnProperty('next_token') && meta['next_token']) {
+            next_token = meta['next_token'];
+            console.log(`next_token: ${next_token}`);
+        } else {
+            console.log('not found next_token');
+            break;
+        };
+        // if (meta.hasOwnProperty('newest_id') && meta['newest_id']) {
+        //     since_id = meta['newest_id'];
+        //     console.log(`newest_id: ${since_id}`);
+        // };
     }
-    const tweetList = data.map((data) => {
-        return new Tweet(data);
-    });
-    const slideList = tweetList.filter((tweet) => {
-        return tweet.slidesClass.length > 0
-    }).map((tweet) => {
-        return tweet.slidesClass;
-    }).flat();
-    await Promise.all(slideList.map(async (slide) => {
-        await slide.fetch();
-    }));
-    let bulkWriter = firestore.bulkWriter();
-    Promise.all([tweetList.map(async (tweet) => {
-        let documentRef = firestore.collection('tweets').doc(tweet.id);
-        const documentSnapshot = await documentRef.get();
-        if (documentSnapshot.exists) {
-            return await bulkWriter.update(documentRef, tweet.toJson());
-        } else {
-            return await bulkWriter.create(documentRef, tweet.toJson());
-        }
-    }), slideList.map(async (slide) => {
-        let documentRef = firestore.collection('slides').doc(slide.id);
-        const documentSnapshot = await documentRef.get();
-        if (documentSnapshot.exists) {
-            return await bulkWriter.update(documentRef, slide.toJson());
-        } else {
-            return await bulkWriter.create(documentRef, slide.toJson());
-        }
-    }), usersList.map(async (user) => {
-        let documentRef = firestore.collection('users').doc(user.id);
-        const documentSnapshot = await documentRef.get();
-        if (documentSnapshot.exists) {
-            return await bulkWriter.update(documentRef, user.toJson());
-        } else {
-            return await bulkWriter.create(documentRef, user.toJson());
-        }
-    })]);
 })();
