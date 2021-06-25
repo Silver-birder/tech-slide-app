@@ -71,7 +71,13 @@ class Slide {
         }, {});
     }
     async fetch() {
-        const res = await (await fetch(this.url)).text();
+        let res = null;
+        try {
+            res = await (await fetch(this.url)).text();
+        } catch(e) {
+            console.log(e);
+            return;
+        }
         const dom = new JSDOM(res);
         const nodeList = dom.window.document.querySelectorAll('[property^="og:"]');
         for (var i = 0; i < nodeList.length; i++) {
@@ -110,8 +116,9 @@ const client = new Twitter({
     let since_id = "";
     let counter = 0;
     const startTime = new Date();
-    const h = startTime.getHours();
-    startTime.setHours(h - 1);
+    const m = startTime.getMinutes();
+    startTime.setMinutes(m - 15);
+    const endTime = new Date();
     while (true) {
         const query = 'has:links -is:reply -is:retweet -is:quote (url:"https://speakerdeck.com" OR url:"https://www.slideshare.net" OR url:"https://docs.google.com/presentation")';
         const option = {
@@ -121,21 +128,37 @@ const client = new Twitter({
             },
             expansions: 'author_id',
             start_time: startTime,
+            end_time: endTime,
             max_results: 100,
         }
         if (next_token) {
             option['next_token'] = next_token;
         }
-        // if (since_id) {
-        //     option['since_id'] = since_id;
-        // }
+        if (since_id) {
+            // option['since_id'] = since_id;
+            // delete option['start_time'];
+        }
         console.log('option');
         console.log(option);
         const { data, includes, meta } = await client.get('tweets/search/recent', option);
+        console.log(meta);
+        console.log(`result_count: ${meta.result_count}`)
         if (meta.result_count == 0) {
-            console.log('result_count:0');
+            console.log('break for result_count:0');
             break;
         }
+        if (meta.hasOwnProperty('next_token') && meta['next_token']) {
+            next_token = meta['next_token'];
+            console.log(`next_token: ${meta['next_token']}`);
+        } else {
+            next_token = null;
+        };
+        if (meta.hasOwnProperty('newest_id') && meta['newest_id']) {
+            since_id = meta['newest_id'];
+            console.log(`newest_id: ${since_id}`);
+        } else {
+            since_id = null;
+        };
         let usersList = [];
         if (includes && includes.hasOwnProperty('users')) {
             usersList = includes.users.map((u) => {
@@ -207,16 +230,9 @@ const client = new Twitter({
         }));
 
         console.log('close');
-        if (meta.hasOwnProperty('next_token') && meta['next_token']) {
-            next_token = meta['next_token'];
-            console.log(`next_token: ${next_token}`);
-        } else {
-            console.log('not found next_token');
+        if (next_token === null || since_id === null) {
+            console.log('next_token or since_id is null. break');
             break;
-        };
-        // if (meta.hasOwnProperty('newest_id') && meta['newest_id']) {
-        //     since_id = meta['newest_id'];
-        //     console.log(`newest_id: ${since_id}`);
-        // };
+        }
     }
 })();
