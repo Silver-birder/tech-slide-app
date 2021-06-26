@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "keywords": [],
   "author": "silverbirder <silverbirder@gmail.com> (https://silver-birder.github.io/)",
   "license": "ISC",
   "dependencies": {
     "@google-cloud/firestore": "^4.12.3",
+    "dotenv": "^10.0.0",
     "jsdom": "^16.6.0",
     "node-fetch": "^2.6.1",
     "twitter-v2": "^1.1.0"

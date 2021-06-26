@@ -2,3 +2,4 @@ node_modules
 
 *.sh
 out*.json
+.env
