@@ -13,15 +13,25 @@ class App extends React.Component {
   };
 
   async componentDidMount() {
+    await this.start();
+  }
+
+  async start() {
     const { firestore } = this.props;
     var unsubscribeList = [];
-    let dt = new Date();
-    let month = dt.getMonth() + 1;
-    dt.setMonth(month - 2);
+    let startDate = new Date();
+    startDate.setHours(0);
+    startDate.setMinutes(0);
+    startDate.setSeconds(0);
+    let endDate = new Date();
+    endDate.setDate(endDate.getDate() + 1);
+    endDate.setHours(0);
+    endDate.setMinutes(0);
+    endDate.setSeconds(0);
     firestore
       .collection('tweets')
-      .where('createdAt', '>', dt)
-      .where('createdAt', '<', new Date())
+      .where('createdAt', '>', startDate)
+      .where('createdAt', '<', endDate)
       .onSnapshot(snapshot => {
         let slides = {};
         snapshot.docs.map((doc) => {
