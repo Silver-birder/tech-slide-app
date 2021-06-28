@@ -8,7 +8,7 @@ class App extends React.Component {
     return (
       <div className="App">
         <SearchConf></SearchConf>
-        <SlideList startDate={new Date("2021-06-26")} endDate={new Date("2021-06-27")}></SlideList>
+        <SlideList startDate={new Date("2021-06-28")} endDate={new Date("2021-06-29")}></SlideList>
       </div>
     );
   }

@@ -40,7 +40,7 @@ class SlideInfo {
 
 class SlideList extends React.Component {
     state = {
-        slides: [],
+        slides: {},
         unsubscribeList: []
     };
 
@@ -63,6 +63,8 @@ class SlideList extends React.Component {
         }
     }
     async handleTweets(snapshot) {
+        const { firestore } = this.props;
+        this.setState({ slides: {} })
         let slides = {};
         snapshot.docs.map((doc) => {
             const data = doc.data();
@@ -70,40 +72,46 @@ class SlideList extends React.Component {
                 slides[slideId] = slides.hasOwnProperty(slideId) ? slides[slideId].merge(new SlideInfo(data)) : new SlideInfo(data);
             });
         });
-        let arySlides = Object.entries(slides);
-        arySlides.sort(function (p1, p2) {
-            var p1Key = p1[1].totalCount, p2Key = p2[1].totalCount;
-            if (p1Key < p2Key) { return 1; }
-            if (p1Key > p2Key) { return -1; }
-            return 0;
+        const slideIds = Object.keys(slides);
+        slideIds.sort((a, b) => {
+            if (slides[a].totalCount > slides[b].totalCount) {
+                return -1;
+            } else if (slides[a].totalCount < slides[b].totalCount) {
+                return 1;
+            } else {
+                return 0;
+            }
         });
-        const limitSlides = arySlides.slice(19);
-        const slideIdList10 = arrayChunk(limitSlides, 10);
+        const slideIdList = slideIds.slice(0, 20);
+        const limitedSlides = {};
+        slideIdList.map((slideId) => {
+            limitedSlides[slideId] = slides[slideId];
+        });
+        const slideIdList10 = arrayChunk(slideIdList, 10);
         this.unsubscribes();
-        this.setState({slides: limitSlides})
         slideIdList10.map((slideIdList) => {
             const unsubscribe = firestore
                 .collection('slides')
                 .where('id', 'in', slideIdList)
-                .onSnapshot(this.handleSlides.bind(this));
+                .onSnapshot(this.handleSlides.bind(this, limitedSlides));
             this.state.unsubscribeList.push(unsubscribe);
         });
     }
 
-    async handleSlides(snapshot) {
+    async handleSlides(slides, snapshot) {
         snapshot.docs.map((doc) => {
             const data = doc.data();
             const id = data.id;
             const slide = slides[id];
             slides[id] = Object.assign(slide, data);
         });
-        this.setState({ slides: tmpSlides });
+        this.setState({ slides: Object.assign(slides, this.state.slides) });
     }
 
     render() {
         return (
             <div className="row row-cols-1 row-cols-md-3 g-4">
-                {/* {this.state.slides.map((slide) => {
+                {Object.entries(this.state.slides).map((slide) => {
                     return (
                         <div className="col" key={slide[0]}>
                             <div className="card">
@@ -127,13 +135,13 @@ class SlideList extends React.Component {
                                 </div>
                                 <div className="card-footer">
                                     <small className="text-muted">
-                                        Update {slide[1].createdAt.getFullYear()}/{slide[1].createdAt.getMonth() + 1}/{slide[1].createdAt.getDate()} {slide[1].createdAt.getHours()}:{slide[1].createdAt.getMinutes()}:{slide[1].createdAt.getSeconds()}
+                                        Update {slide[1].createdAt.toDate().getFullYear()}/{slide[1].createdAt.toDate().getMonth() + 1}/{slide[1].createdAt.toDate().getDate()} {slide[1].createdAt.toDate().getHours()}:{slide[1].createdAt.toDate().getMinutes()}:{slide[1].createdAt.toDate().getSeconds()}
                                     </small>
                                 </div>
                             </div>
                         </div>
                     );
-                })} */}
+                })}
             </div>
         );
     }
