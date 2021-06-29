@@ -92,6 +92,7 @@ class UserDoc extends BaseDoc {
         this.id = data.id;
         this.name = data.name;
         this.userName = data.username;
+        this.profileImageUrl = data.profile_image_url;
     }
 }
 

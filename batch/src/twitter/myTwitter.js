@@ -12,6 +12,9 @@ exports.MyTwitter = class MyTwitter {
             tweet: {
                 fields: 'created_at,public_metrics,entities'
             },
+            user: {
+                fields: 'profile_image_url',
+            },
             expansions: 'author_id',
             max_results: 100,
         }
