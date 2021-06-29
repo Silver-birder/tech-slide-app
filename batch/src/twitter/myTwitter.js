@@ -31,8 +31,8 @@ exports.MyTwitter = class MyTwitter {
             dataList = dataList.concat(data);
             includeList = includeList.concat(includes);
 
-            if (dataList.length >= (os.cpus().length - 1) * 100) {
-                console.log(`over the data (dataList.length:${dataList.length}. os.cpus.length - 1: ${os.cpus().length - 1}).`);
+            if (dataList.length >= os.cpus().length * 100) {
+                console.log(`over the data (dataList.length:${dataList.length}. os.cpus.length: ${os.cpus().length}).`);
                 console.log('Stop the loop twitter request process.');
                 break;
             }

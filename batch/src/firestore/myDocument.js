@@ -136,9 +136,9 @@ exports.DocFactory = class DocFactory {
             return array;
         }, []);
         console.log(`slideList: ${slideList.length}`);
-        await concurrentPromise(slideList.map(async (slide) => {
+        await concurrentPromise(slideList.map(async (slide, index) => {
             await slide.fetch();
-        }), os.cpus().length - 1);
+        }), os.cpus().length);
         return [usersList, tweetList, slideList];
     }
 }
