@@ -64,6 +64,8 @@ class SlideDoc extends BaseDoc {
         super();
         this.id = data.id;
         this.url = data.url;
+        const wu = new url.URL(this.url);
+        this.host = wu.host;
     }
     async fetch() {
         let res = null;
