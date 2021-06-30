@@ -33,19 +33,27 @@ class SlideArea extends React.Component {
                 </div>
                 <div>
                     <div className="form-check form-check-inline">
-                        <input className="form-check-input" type="checkbox" id="selectSpeakerDeck" value="speackerdeck" onChange={this.onCheckboxChange.bind(this)} checked={this.state.selectSpeakerDeck} />
-                        <label className="form-check-label" htmlFor="selectSpeakerDeck">SpeakerDeck</label>
+                        <input className="form-check-input" type="checkbox" id="selectSpeakerDeck" onChange={this.onCheckboxChange.bind(this)} checked={this.state.selectSpeakerDeck} />
+                        <label className="form-check-label" htmlFor="selectSpeakerDeck">speakerdeck.com</label>
                     </div>
                     <div className="form-check form-check-inline">
-                        <input className="form-check-input" type="checkbox" id="selectSlideShare" value="slideshare" onChange={this.onCheckboxChange.bind(this)} checked={this.state.selectSlideShare} />
-                        <label className="form-check-label" htmlFor="selectSlideShare">SlideShare</label>
+                        <input className="form-check-input" type="checkbox" id="selectSlideShare" onChange={this.onCheckboxChange.bind(this)} checked={this.state.selectSlideShare} />
+                        <label className="form-check-label" htmlFor="selectSlideShare">www.slideshare.net</label>
                     </div>
                     <div className="form-check form-check-inline">
-                        <input className="form-check-input" type="checkbox" id="selectGoogleSlide" value="googleslide" onChange={this.onCheckboxChange.bind(this)} checked={this.state.selectGoogleSlide} />
-                        <label className="form-check-label" htmlFor="selectGoogleSlide">GoogleSlide</label>
+                        <input className="form-check-input" type="checkbox" id="selectGoogleSlide" onChange={this.onCheckboxChange.bind(this)} checked={this.state.selectGoogleSlide} />
+                        <label className="form-check-label" htmlFor="selectGoogleSlide">docs.google.com</label>
                     </div>
                 </div>
-                <SlideList startDate={this.state.startDate} endDate={this.state.endDate}></SlideList>
+                <SlideList
+                    hosts={{
+                        speakerdeck: this.state.selectSpeakerDeck,
+                        slideshare: this.state.selectSlideShare,
+                        googleslide: this.state.selectGoogleSlide
+                    }}
+                    startDate={this.state.startDate}
+                    endDate={this.state.endDate}
+                ></SlideList>
             </div>
         )
     }

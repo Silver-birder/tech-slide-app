@@ -49,17 +49,24 @@ class SlideList extends React.Component {
     }
 
     async componentDidUpdate(prevProps, prevState, snapshot) {
-        if (prevProps.startDate !== this.props.startDate || prevProps.endDate !== this.props.endDate) {
+        if (
+            prevProps.startDate !== this.props.startDate ||
+            prevProps.endDate !== this.props.endDate ||
+            prevProps.hosts.slideshare !== this.props.hosts.slideshare ||
+            prevProps.hosts.googleslide !== this.props.hosts.googleslide ||
+            prevProps.hosts.speakerdeck !== this.props.hosts.speakerdeck
+        ) {
             await this.start();
         }
     }
     start() {
         const { firestore } = this.props;
+        this.setState({ slides: {} });
         firestore
             .collection('tweets')
             .where('createdAt', '>=', new Date(`${this.props.startDate} 00:00:00`))
             .where('createdAt', '<=', new Date(`${this.props.endDate} 23:59:59`))
-            .limit(100)
+            .limit(1000)
             .onSnapshot(this.handleTweets.bind(this));
     }
     unsubscribes() {
@@ -105,7 +112,20 @@ class SlideList extends React.Component {
     }
 
     async handleSlides(slides, snapshot) {
-        snapshot.docs.map((doc) => {
+        const hosts = [];
+        if (this.props.hosts.slideshare) {
+            hosts.push('www.slideshare.net');
+        }
+        if (this.props.hosts.googleslide) {
+            hosts.push('docs.google.com');
+        }
+        if (this.props.hosts.speakerdeck) {
+            hosts.push('speakerdeck.com')
+        }
+        snapshot.docs.filter((doc) => {
+            const data = doc.data();
+            return hosts.indexOf(data.host) !== -1
+        }).map((doc) => {
             const data = doc.data();
             const id = data.id;
             const slide = slides[id];
@@ -123,9 +143,8 @@ class SlideList extends React.Component {
                             <div className="card">
                                 <div className="card-header">
                                     <span>
-                                        {slide[1].site_name} <span className="badge bg-secondary">{slide[1].totalCount}</span>
+                                        {slide[1].host} <span className="badge bg-secondary">{slide[1].totalCount}</span>
                                     </span>
-                                    {/* site_nameじゃなくて、hostというかドメインを出すほうが良いかも。site_nameない slideshareあるので。 */}
                                 </div>
                                 <img src={slide[1].image} className="card-img-top"></img>
                                 <div className="card-body">
@@ -135,6 +154,7 @@ class SlideList extends React.Component {
                                     <p className="card-text">
                                         {slide[1].description}
                                         {/* ある一定文字数超えたら、隠すように */}
+                                        {/* twitter iconやhashtagを出したい */}
                                     </p>
                                     <a href={slide[1].url} className="btn btn-primary" target="_blank">Go the slide</a>
                                 </div>
