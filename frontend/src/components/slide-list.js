@@ -12,6 +12,7 @@ class SlideInfo {
     replyCount = 0
     retweetCount = 0
     totalCount = 0
+    hashTags = []
     createdAt
     constructor(data) {
         this.tweetCount = 1;
@@ -20,6 +21,7 @@ class SlideInfo {
         this.replyCount = data.replyCount;
         this.retweetCount = data.retweetCount;
         this.totalCount = this.calcTotalCount();
+        this.hashTags = data.hashTags;
         this.createdAt = data.createdAt.hasOwnProperty('toDate') ? data.createdAt.toDate() : data.createdAt;
     }
     calcTotalCount() {
@@ -32,6 +34,7 @@ class SlideInfo {
             replyCount: this.replyCount + slideInfo.replyCount,
             retweetCount: this.retweetCount + slideInfo.retweetCount,
             totalCount: this.totalCount + slideInfo.totalCount,
+            hashTags: this.hashTags.concat(slideInfo.hashTags),
             createdAt: this.createdAt > slideInfo.createdAt ? this.createdAt : slideInfo.createdAt
         }
         return new SlideInfo(data);
@@ -154,9 +157,24 @@ class SlideList extends React.Component {
                                     <p className="card-text">
                                         {slide[1].description}
                                         {/* ある一定文字数超えたら、隠すように */}
-                                        {/* twitter iconやhashtagを出したい */}
+                                        {/* twitter iconを出したい */}
                                     </p>
                                     <a href={slide[1].url} className="btn btn-primary" target="_blank">Go the slide</a>
+                                    <ul className="list-group list-group-flush">
+                                        <li className="list-group-item text-start">
+                                            {/* <img src="https://pbs.twimg.com/profile_images/1001734669719818240/FXI4G2Uv_normal.jpg" className="border border-5 rounded-circle" />
+                                            <img src="https://pbs.twimg.com/profile_images/1001734669719818240/FXI4G2Uv_normal.jpg" className="border border-5 rounded-circle" />
+                                            <img src="https://pbs.twimg.com/profile_images/1001734669719818240/FXI4G2Uv_normal.jpg" className="border border-5 rounded-circle" /> */}
+                                        </li>
+                                        <li className="list-group-item text-start">
+                                            {Array.from(new Set(slide[1].hashTags)).map((hashTag) => {
+                                                return (
+                                                    <div key={hashTag}>
+                                                        <a href={`https://twitter.com/hashtag/${hashTag}`}>#{hashTag}</a>
+                                                    </div>
+                                                )
+                                            })}</li>
+                                    </ul>
                                 </div>
                                 <div className="card-footer">
                                     <small className="text-muted">
