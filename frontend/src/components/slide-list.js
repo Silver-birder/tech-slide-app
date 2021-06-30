@@ -48,18 +48,24 @@ class SlideList extends React.Component {
         await this.start();
     }
 
+    async componentDidUpdate(prevProps, prevState, snapshot) {
+        if (prevProps.startDate !== this.props.startDate || prevProps.endDate !== this.props.endDate) {
+            await this.start();
+        }
+    }
     start() {
-        const { firestore, startDate, endDate } = this.props;
+        const { firestore } = this.props;
         firestore
             .collection('tweets')
-            .where('createdAt', '>', startDate)
-            .where('createdAt', '<', endDate)
+            .where('createdAt', '>=', new Date(`${this.props.startDate} 00:00:00`))
+            .where('createdAt', '<=', new Date(`${this.props.endDate} 23:59:59`))
+            .limit(100)
             .onSnapshot(this.handleTweets.bind(this));
     }
     unsubscribes() {
         if (this.state.unsubscribeList.length > 0) {
             this.state.unsubscribeList.map((unsubscribe) => unsubscribe());
-            this.state.setState({ unsubscribeList: [] });
+            this.setState({ unsubscribeList: [] });
         }
     }
     async handleTweets(snapshot) {
@@ -113,15 +119,13 @@ class SlideList extends React.Component {
             <div className="row row-cols-1 row-cols-md-3 g-4">
                 {Object.entries(this.state.slides).map((slide) => {
                     return (
-                        <div className="col" key={slide[0]}>
+                        <div className="col" key={slide[0]} data-id={slide[0]}>
                             <div className="card">
                                 <div className="card-header">
                                     <span>
-                                        {slide[1].site_name}
+                                        {slide[1].site_name} <span className="badge bg-secondary">{slide[1].totalCount}</span>
                                     </span>
-                                    <span className="badge bg-secondary">
-                                        {slide[1].totalCount}
-                                    </span>
+                                    {/* site_nameじゃなくて、hostというかドメインを出すほうが良いかも。site_nameない slideshareあるので。 */}
                                 </div>
                                 <img src={slide[1].image} className="card-img-top"></img>
                                 <div className="card-body">
@@ -130,8 +134,9 @@ class SlideList extends React.Component {
                                     </h5>
                                     <p className="card-text">
                                         {slide[1].description}
+                                        {/* ある一定文字数超えたら、隠すように */}
                                     </p>
-                                    <a href={slide[1].url} className="btn btn-primary">Go the slide</a>
+                                    <a href={slide[1].url} className="btn btn-primary" target="_blank">Go the slide</a>
                                 </div>
                                 <div className="card-footer">
                                     <small className="text-muted">
