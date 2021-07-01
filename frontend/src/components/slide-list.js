@@ -80,7 +80,6 @@ class SlideList extends React.Component {
     }
     async handleTweets(snapshot) {
         const { firestore } = this.props;
-        this.setState({ slides: {} })
         let slides = {};
         snapshot.docs.map((doc) => {
             const data = doc.data();
@@ -89,32 +88,28 @@ class SlideList extends React.Component {
             });
         });
         const slideIds = Object.keys(slides);
-        slideIds.sort((a, b) => {
-            if (slides[a].totalCount > slides[b].totalCount) {
-                return -1;
-            } else if (slides[a].totalCount < slides[b].totalCount) {
-                return 1;
-            } else {
-                return 0;
-            }
-        });
-        const slideIdList = slideIds.slice(0, 20);
-        const limitedSlides = {};
-        slideIdList.map((slideId) => {
-            limitedSlides[slideId] = slides[slideId];
-        });
-        const slideIdList10 = arrayChunk(slideIdList, 10);
+        const slideIdList10 = arrayChunk(slideIds, 10);
         this.unsubscribes();
         slideIdList10.map((slideIdList) => {
             const unsubscribe = firestore
                 .collection('slides')
                 .where('id', 'in', slideIdList)
-                .onSnapshot(this.handleSlides.bind(this, limitedSlides));
+                .onSnapshot(this.handleSlides.bind(this, slides));
             this.state.unsubscribeList.push(unsubscribe);
         });
     }
 
     async handleSlides(slides, snapshot) {
+        snapshot.docs.map((doc) => {
+            const data = doc.data();
+            const id = data.id;
+            const slide = slides[id];
+            slides[id] = Object.assign(slide, data);
+        });
+        this.setState({ slides: Object.assign(slides, this.state.slides) });
+    }
+
+    render() {
         const hosts = [];
         if (this.props.hosts.slideshare) {
             hosts.push('www.slideshare.net');
@@ -125,41 +120,43 @@ class SlideList extends React.Component {
         if (this.props.hosts.speakerdeck) {
             hosts.push('speakerdeck.com')
         }
-        snapshot.docs.filter((doc) => {
-            const data = doc.data();
-            return hosts.indexOf(data.host) !== -1
-        }).map((doc) => {
-            const data = doc.data();
-            const id = data.id;
-            const slide = slides[id];
-            slides[id] = Object.assign(slide, data);
+        const slides = this.state.slides;
+        const slideIds = Object.keys(slides);
+        const filterdSlideIds = slideIds.filter((slideId) => {
+            return hosts.indexOf(slides[slideId].host) !== -1;
+        })
+        filterdSlideIds.sort((a, b) => {
+            if (slides[a].totalCount > slides[b].totalCount) {
+                return -1;
+            } else if (slides[a].totalCount < slides[b].totalCount) {
+                return 1;
+            } else {
+                return 0;
+            }
         });
-        this.setState({ slides: Object.assign(slides, this.state.slides) });
-    }
-
-    render() {
         return (
             <div className="row row-cols-1 row-cols-md-3 g-4">
-                {Object.entries(this.state.slides).map((slide) => {
+                {filterdSlideIds.map((slideId) => {
+                    const slide = slides[slideId];
                     return (
-                        <div className="col" key={slide[0]} data-id={slide[0]}>
+                        <div className="col" key={slideId} data-id={slideId}>
                             <div className="card">
                                 <div className="card-header">
                                     <span>
-                                        {slide[1].host} <span className="badge bg-secondary">{slide[1].totalCount}</span>
+                                        {slide.host} <span className="badge bg-secondary">{slide.totalCount}</span>
                                     </span>
                                 </div>
-                                <img src={slide[1].image} className="card-img-top"></img>
+                                <img src={slide.image} className="card-img-top"></img>
                                 <div className="card-body">
                                     <h5 className="card-title">
-                                        {slide[1].title}
+                                        {slide.title}
                                     </h5>
                                     <p className="card-text">
-                                        {slide[1].description}
+                                        {slide.description}
                                         {/* ある一定文字数超えたら、隠すように */}
                                         {/* twitter iconを出したい */}
                                     </p>
-                                    <a href={slide[1].url} className="btn btn-primary" target="_blank">Go the slide</a>
+                                    <a href={slide.url} className="btn btn-primary" target="_blank">Go the slide</a>
                                     <ul className="list-group list-group-flush">
                                         <li className="list-group-item text-start">
                                             {/* <img src="https://pbs.twimg.com/profile_images/1001734669719818240/FXI4G2Uv_normal.jpg" className="border border-5 rounded-circle" />
@@ -167,7 +164,7 @@ class SlideList extends React.Component {
                                             <img src="https://pbs.twimg.com/profile_images/1001734669719818240/FXI4G2Uv_normal.jpg" className="border border-5 rounded-circle" /> */}
                                         </li>
                                         <li className="list-group-item text-start">
-                                            {Array.from(new Set(slide[1].hashTags)).map((hashTag) => {
+                                            {Array.from(new Set(slide.hashTags)).map((hashTag) => {
                                                 return (
                                                     <div key={hashTag}>
                                                         <a href={`https://twitter.com/hashtag/${hashTag}`}>#{hashTag}</a>
@@ -178,7 +175,7 @@ class SlideList extends React.Component {
                                 </div>
                                 <div className="card-footer">
                                     <small className="text-muted">
-                                        Update {slide[1].createdAt.toDate().getFullYear()}/{slide[1].createdAt.toDate().getMonth() + 1}/{slide[1].createdAt.toDate().getDate()} {slide[1].createdAt.toDate().getHours()}:{slide[1].createdAt.toDate().getMinutes()}:{slide[1].createdAt.toDate().getSeconds()}
+                                        Update {slide.createdAt.toDate().getFullYear()}/{slide.createdAt.toDate().getMonth() + 1}/{slide.createdAt.toDate().getDate()} {slide.createdAt.toDate().getHours()}:{slide.createdAt.toDate().getMinutes()}:{slide.createdAt.toDate().getSeconds()}
                                     </small>
                                 </div>
                             </div>
