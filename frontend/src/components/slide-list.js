@@ -67,8 +67,8 @@ class SlideList extends React.Component {
         this.setState({ slides: {} });
         firestore
             .collection('tweets')
-            .where('createdAt', '>=', new Date(`${this.props.startDate} 00:00:00`))
-            .where('createdAt', '<=', new Date(`${this.props.endDate} 23:59:59`))
+            .where('createdAt', '>=', new Date(`${this.props.startDate.replaceAll('-', '/')} 00:00:00`))
+            .where('createdAt', '<=', new Date(`${this.props.endDate.replaceAll('-', '/')} 23:59:59`))
             .limit(1000)
             .onSnapshot(this.handleTweets.bind(this));
     }
