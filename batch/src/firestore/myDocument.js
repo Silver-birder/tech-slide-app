@@ -25,7 +25,10 @@ class TweetDoc extends BaseDoc {
     quoteCount
     slideIdList
     slidesClass = [];
+    slides = []
     userId
+    user = {}
+    slideHosts = []
     constructor(data, domains = []) {
         super();
         this.id = data.id;
@@ -53,6 +56,8 @@ class TweetDoc extends BaseDoc {
     toJson() {
         const res = super.toJson();
         delete res['slidesClass'];
+        delete res['slideIdList'];
+        delete res['userId'];
         return res;
     }
 }
@@ -142,7 +147,21 @@ exports.DocFactory = class DocFactory {
         await concurrentPromise(slideList.map(async (slide, index) => {
             await slide.fetch();
         }), os.cpus().length);
-        return [usersList, tweetList, slideList];
+
+        // Merge
+        const usersMap = {}
+        usersList.map((user) => usersMap[user.id] = user);
+        const slidesMap = {}
+        slideList.map((slide) => slidesMap[slide.id] = slide);
+        tweetList.map((tweet) => {
+            tweet.slideIdList.map((slideId) => {
+                const slideInfo = slidesMap[slideId].toJson();
+                tweet.slides.push(slideInfo);
+                tweet.slideHosts.push(slideInfo.host);
+            });
+            tweet.user = usersMap[tweet.userId].toJson();
+        });
+        return [tweetList];
     }
 }
 

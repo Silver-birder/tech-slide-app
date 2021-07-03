@@ -13,8 +13,9 @@ class SlideInfo {
     retweetCount = 0
     totalCount = 0
     hashTags = []
+    users = []
     createdAt
-    constructor(data) {
+    constructor(data, users) {
         this.tweetCount = 1;
         this.likeCount = data.likeCount;
         this.quoteCount = data.quoteCount;
@@ -23,6 +24,7 @@ class SlideInfo {
         this.totalCount = this.calcTotalCount();
         this.hashTags = data.hashTags;
         this.createdAt = data.createdAt.hasOwnProperty('toDate') ? data.createdAt.toDate() : data.createdAt;
+        this.users = users;
     }
     calcTotalCount() {
         return this.tweetCount + this.likeCount + this.quoteCount + this.replyCount;
@@ -37,14 +39,13 @@ class SlideInfo {
             hashTags: this.hashTags.concat(slideInfo.hashTags),
             createdAt: this.createdAt > slideInfo.createdAt ? this.createdAt : slideInfo.createdAt
         }
-        return new SlideInfo(data);
+        return new SlideInfo(data, this.users.concat(slideInfo.users));
     }
 }
 
 class SlideList extends React.Component {
     state = {
-        slides: {},
-        unsubscribeList: []
+        slideList: [],
     };
 
     async componentDidMount() {
@@ -64,53 +65,7 @@ class SlideList extends React.Component {
     }
     start() {
         const { firestore } = this.props;
-        this.setState({ slides: {} });
-        firestore
-            .collection('tweets')
-            .where('createdAt', '>=', new Date(`${this.props.startDate.replaceAll('-', '/')} 00:00:00`))
-            .where('createdAt', '<=', new Date(`${this.props.endDate.replaceAll('-', '/')} 23:59:59`))
-            .limit(1000)
-            .onSnapshot(this.handleTweets.bind(this));
-    }
-    unsubscribes() {
-        if (this.state.unsubscribeList.length > 0) {
-            this.state.unsubscribeList.map((unsubscribe) => unsubscribe());
-            this.setState({ unsubscribeList: [] });
-        }
-    }
-    async handleTweets(snapshot) {
-        const { firestore } = this.props;
-        let slides = {};
-        snapshot.docs.map((doc) => {
-            const data = doc.data();
-            data.slideIdList.map((slideId) => {
-                slides[slideId] = slides.hasOwnProperty(slideId) ? slides[slideId].merge(new SlideInfo(data)) : new SlideInfo(data);
-            });
-        });
-        const slideIds = Object.keys(slides);
-        const slideIdList10 = arrayChunk(slideIds, 10);
-        this.unsubscribes();
-        slideIdList10.map((slideIdList) => {
-            const unsubscribe = firestore
-                .collection('slides')
-                .where('id', 'in', slideIdList)
-                .onSnapshot(this.handleSlides.bind(this, slides));
-            this.state.unsubscribeList.push(unsubscribe);
-        });
-    }
-
-    async handleSlides(slides, snapshot) {
-        snapshot.docs.map((doc) => {
-            const data = doc.data();
-            const id = data.id;
-            const slide = slides[id];
-            slides[id] = Object.assign(slide, data);
-        });
-        this.setState({ slides: Object.assign(slides, this.state.slides) });
-    }
-
-    render() {
-        const hosts = [];
+        let hosts = [];
         if (this.props.hosts.slideshare) {
             hosts.push('www.slideshare.net');
         }
@@ -120,26 +75,48 @@ class SlideList extends React.Component {
         if (this.props.hosts.speakerdeck) {
             hosts.push('speakerdeck.com')
         }
-        const slides = this.state.slides;
-        const slideIds = Object.keys(slides);
-        const filterdSlideIds = slideIds.filter((slideId) => {
-            return hosts.indexOf(slides[slideId].host) !== -1;
-        })
-        filterdSlideIds.sort((a, b) => {
-            if (slides[a].totalCount > slides[b].totalCount) {
+        firestore
+            .collection('tweets')
+            .where('createdAt', '>=', new Date(`${this.props.startDate.replaceAll('-', '/')} 00:00:00`))
+            .where('createdAt', '<=', new Date(`${this.props.endDate.replaceAll('-', '/')} 23:59:59`))
+            .where('slideHosts', 'array-contains-any', hosts)
+            .limit(1000)
+            .onSnapshot(this.handleTweets.bind(this));
+    }
+
+    async handleTweets(snapshot) {
+        this.setState({ slideList: [] });
+        let slideMap = {};
+        snapshot.docs.map((doc) => {
+            const data = doc.data();
+            data.slides.map((slide) => {
+                slideMap[slide.id] = slideMap.hasOwnProperty(slide.id) ? slideMap[slide.id].merge(new SlideInfo(data, [data.user])) : new SlideInfo(data, [data.user]);
+                slideMap[slide.id] = Object.assign(slideMap[slide.id], slide);
+            });
+        });
+        const slideIds = Object.keys(slideMap);
+        slideIds.sort((a, b) => {
+            if (slideMap[a].totalCount > slideMap[b].totalCount) {
                 return -1;
-            } else if (slides[a].totalCount < slides[b].totalCount) {
+            } else if (slideMap[a].totalCount < slideMap[b].totalCount) {
                 return 1;
             } else {
                 return 0;
             }
         });
+        let slideList = [];
+        slideIds.map((slideId) => {
+            slideList.push(slideMap[slideId]);
+        });
+        this.setState({ slideList: slideList });
+    };
+
+    render() {
         return (
             <div className="row row-cols-1 row-cols-md-3 g-4">
-                {filterdSlideIds.map((slideId) => {
-                    const slide = slides[slideId];
+                {this.state.slideList.map((slide) => {
                     return (
-                        <div className="col" key={slideId} data-id={slideId}>
+                        <div className="col" key={slide.id} data-id={slide.id}>
                             <div className="card">
                                 <div className="card-header">
                                     <span>
@@ -153,20 +130,22 @@ class SlideList extends React.Component {
                                     </h5>
                                     <p className="card-text">
                                         {slide.description}
-                                        {/* ある一定文字数超えたら、隠すように */}
-                                        {/* twitter iconを出したい */}
                                     </p>
                                     <a href={slide.url} className="btn btn-primary" target="_blank">Go the slide</a>
                                     <ul className="list-group list-group-flush">
                                         <li className="list-group-item text-start">
-                                            {/* <img src="https://pbs.twimg.com/profile_images/1001734669719818240/FXI4G2Uv_normal.jpg" className="border border-5 rounded-circle" />
-                                            <img src="https://pbs.twimg.com/profile_images/1001734669719818240/FXI4G2Uv_normal.jpg" className="border border-5 rounded-circle" />
-                                            <img src="https://pbs.twimg.com/profile_images/1001734669719818240/FXI4G2Uv_normal.jpg" className="border border-5 rounded-circle" /> */}
+                                            {slide.users.map((user, index) => {
+                                                return (
+                                                    <a href={`https://twitter.com/${user.userName}`} key={user.id + "-" + index} data-id={user.id}>
+                                                        <img src={user.profileImageUrl} className="border border-5 rounded-circle" />
+                                                    </a>
+                                                )
+                                            })}
                                         </li>
                                         <li className="list-group-item text-start">
                                             {Array.from(new Set(slide.hashTags)).map((hashTag) => {
                                                 return (
-                                                    <div key={hashTag}>
+                                                    <div key={hashTag} data-id={hashTag}>
                                                         <a href={`https://twitter.com/hashtag/${hashTag}`}>#{hashTag}</a>
                                                     </div>
                                                 )

@@ -21,23 +21,17 @@ const main = async () => {
     console.log(`data: ${data.length} counts`);
     console.log(`includes: ${includes.length} counts`);
     const factory = new DocFactory(data, includes, DOMAINS);
-    const [usersList, tweetList, slideList] = await factory.create();
+    const [tweetList] = await factory.create();
     console.log(`${"-".repeat(100)}`);
     console.log('will save firestore documents');
-    console.log(`usersList: ${usersList.length} counts`);
     console.log(`tweetList: ${tweetList.length} counts`);
-    console.log(`slideList: ${slideList.length} counts`);
-    const uf = new MyFirestore(usersList, "users");
     const tf = new MyFirestore(tweetList, "tweets");
-    const sf = new MyFirestore(slideList, "slides");
-    const [ufr, tfr, sfr] = await Promise.all([uf, tf, sf].map(async (f) => {
+    const [tfr] = await Promise.all([tf].map(async (f) => {
         return await f.save();
     }));
     console.log(`${"-".repeat(100)}`);
     console.log('write firestore');
-    console.log(`usersList: ${ufr.length}`);
     console.log(`tweetList: ${tfr.length}`);
-    console.log(`slideList: ${sfr.length}`);
     console.log('end');
 };
 
