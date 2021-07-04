@@ -164,7 +164,7 @@ class SlideList extends React.Component {
                                         <p className="card-text">
                                             {slide.description}
                                         </p>
-                                        <a href={slide.url} className="btn btn-primary" target="_blank">Go the slide</a>
+                                        <a href={slide.url} className="btn btn-primary" target="_blank">Go the presentation</a>
                                         <ul className="list-group list-group-flush">
                                             <li className="list-group-item text-start">
                                                 {users.map((user, index) => {
@@ -201,7 +201,7 @@ class SlideList extends React.Component {
                                                         {tweets.map((tweet) => {
                                                             return (
                                                                 <tr key={tweet.id} data-id={tweet.id}>
-                                                                    <td scope="row"><a href={`https://twitter.com/web/status/${tweet.id}`} target="_blank">Link</a></td>
+                                                                    <td scope="row"><a href={`https://twitter.com/web/status/${tweet.id}`} target="_blank"><i class="bi bi-link-45deg"></i></a></td>
                                                                     <td>1</td>
                                                                     <td>{tweet.likeCount}</td>
                                                                     <td>{tweet.quoteCount}</td>
