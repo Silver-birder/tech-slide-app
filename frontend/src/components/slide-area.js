@@ -10,7 +10,6 @@ const zeroPadding = (n) => {
 class SlideArea extends React.Component {
     state = {
         startDate: dateToString(new Date()),
-        endDate: dateToString(new Date()),
         selectSpeakerDeck: true,
         selectSlideShare: true,
         selectGoogleSlide: true,
@@ -29,7 +28,7 @@ class SlideArea extends React.Component {
         return (
             <div>
                 <div>
-                    <input type="date" id="startDate" name="startDate" onChange={this.onDateChange.bind(this)} value={this.state.startDate} /> 〜 <input type="date" id="endDate" name="endDate" onChange={this.onDateChange.bind(this)} value={this.state.endDate} />
+                    <input type="date" id="startDate" name="startDate" onChange={this.onDateChange.bind(this)} value={this.state.startDate} />
                 </div>
                 <div>
                     <div className="form-check form-check-inline">
