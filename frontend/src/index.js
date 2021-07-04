@@ -6,6 +6,8 @@ import reportWebVitals from './reportWebVitals';
 import firebase from '@firebase/app';
 import '@firebase/firestore';
 import { FirestoreProvider } from 'react-firestore';
+import Analytics from 'analytics'
+import googleAnalytics from '@analytics/google-analytics'
 
 const config = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -13,6 +15,17 @@ const config = {
 };
 
 firebase.initializeApp(config);
+
+const analytics = Analytics({
+  app: 'silverbirder-gap',
+  plugins: [
+    googleAnalytics({
+      trackingId: 'UA-146805630-6'
+    })
+  ]
+})
+
+analytics.page();
 
 ReactDOM.render(
   <FirestoreProvider firebase={firebase}>
