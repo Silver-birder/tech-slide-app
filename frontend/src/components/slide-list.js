@@ -145,6 +145,9 @@ class SlideList extends React.Component {
                         }).createdAt.toDate();
                         const strNewestCreatedAt = `${newestCreatedAt.getFullYear()}/${(newestCreatedAt.getMonth() + 1).toString().padStart(2, "0")}/${newestCreatedAt.getDate().toString().padStart(2, "0")} ${newestCreatedAt.getHours().toString().padStart(2, "0")}:${newestCreatedAt.getMinutes().toString().padStart(2, "0")}:${newestCreatedAt.getSeconds().toString().padStart(2, "0")}`;
                         const users = data.map((d) => d.user);
+                        const hashTags = Array.from(new Set(tweets.map((tweet) => {
+                            return tweet.hashTags;
+                        }).flat()));
                         return (
                             <div className="col" key={slide.id} data-id={slide.id}>
                                 <div className="card">
@@ -174,7 +177,7 @@ class SlideList extends React.Component {
                                                 })}
                                             </li>
                                             <li className="list-group-item text-start">
-                                                {Array.from(new Set(slide.hashTags)).map((hashTag) => {
+                                                {hashTags.map((hashTag) => {
                                                     return (
                                                         <div key={hashTag} data-id={hashTag}>
                                                             <a href={`https://twitter.com/hashtag/${hashTag}`} target="_blank">#{hashTag}</a>
