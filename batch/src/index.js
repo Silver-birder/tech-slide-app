@@ -35,4 +35,4 @@ const main = async () => {
     console.log('end');
 };
 
-main();
+exports.main = main;

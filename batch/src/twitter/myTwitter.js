@@ -16,7 +16,7 @@ exports.MyTwitter = class MyTwitter {
                 fields: 'profile_image_url',
             },
             expansions: 'author_id',
-            max_results: 100,
+            max_results: 10,
         }
     }
     async gets(params = {}) {
@@ -34,7 +34,7 @@ exports.MyTwitter = class MyTwitter {
             dataList = dataList.concat(data);
             includeList = includeList.concat(includes);
 
-            if (dataList.length >= os.cpus().length * 100) {
+            if (dataList.length >= os.cpus().length * 10) {
                 console.log(`over the data (dataList.length:${dataList.length}. os.cpus.length: ${os.cpus().length}).`);
                 console.log('Stop the loop twitter request process.');
                 break;

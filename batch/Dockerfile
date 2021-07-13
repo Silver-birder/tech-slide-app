@@ -8,6 +8,4 @@ RUN npm install --only=production
 
 COPY . ./
 
-ENV GOOGLE_APPLICATION_CREDENTIALS /usr/src/app/sa.json
-
-CMD [ "node", "src/index.js" ]
+CMD [ "node", "src/serve.js" ]
