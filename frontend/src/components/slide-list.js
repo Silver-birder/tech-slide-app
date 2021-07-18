@@ -41,6 +41,7 @@ class SlideInfo {
 }
 
 class SlideList extends React.Component {
+    
     state = {
         slideList: [],
         tweetCount: 0,
@@ -161,7 +162,7 @@ class SlideList extends React.Component {
                                         <h5 className="card-title">
                                             {slide.title}
                                         </h5>
-                                        <p className="card-text">
+                                        <p className="card-text description">
                                             {slide.description}
                                         </p>
                                         <a href={slide.url} className="btn btn-primary" target="_blank">Go the presentation</a>
