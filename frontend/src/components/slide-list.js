@@ -61,7 +61,7 @@ class SlideList extends React.Component {
             await this.start();
         }
     }
-    start() {
+    async start() {
         const { firestore } = this.props;
         let hosts = [];
         if (this.props.hosts.slideshare) {
@@ -73,13 +73,13 @@ class SlideList extends React.Component {
         if (this.props.hosts.speakerdeck) {
             hosts.push('speakerdeck.com')
         }
-        firestore
+        const snapshot = await firestore
             .collection('tweets')
             .where('createdAt', '>=', new Date(`${this.props.startDate.replaceAll('-', '/')} 00:00:00`))
             .where('createdAt', '<=', new Date(`${this.props.startDate.replaceAll('-', '/')} 23:59:59`))
             .where('slideHosts', 'array-contains-any', hosts)
-            .limit(1000)
-            .onSnapshot(this.handleTweets.bind(this));
+            .limit(1000).get();
+        await this.handleTweets(snapshot);
     }
 
     async handleTweets(snapshot) {
@@ -202,7 +202,7 @@ class SlideList extends React.Component {
                                                         {tweets.map((tweet) => {
                                                             return (
                                                                 <tr key={tweet.id} data-id={tweet.id}>
-                                                                    <td scope="row"><a href={`https://twitter.com/web/status/${tweet.id}`} target="_blank"><i class="bi bi-link-45deg"></i></a></td>
+                                                                    <td scope="row"><a href={`https://twitter.com/web/status/${tweet.id}`} target="_blank"><i className="bi bi-link-45deg"></i></a></td>
                                                                     <td>1</td>
                                                                     <td>{tweet.likeCount}</td>
                                                                     <td>{tweet.quoteCount}</td>
